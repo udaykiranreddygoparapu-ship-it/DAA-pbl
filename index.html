@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Disaster Response Logistics Optimization System - An intelligent Emergency Operations Center (EOC) platform powered by Design & Analysis of Algorithms (DAA): Dijkstra, Kruskal, Prim, 0/1 Knapsack DP, Greedy Rationing, and Red-Black Trees.">
+    <meta name="theme-color" content="#070a13">
+    <title>Disaster Response Logistics Optimization System | Emergency Operations Center (EOC)</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚨</text></svg>">
+</head>
+<body>
+
+    <!-- Header & HUD Control Bar -->
+    <header class="eoc-header">
+        <div class="header-brand">
+            <div class="brand-icon-wrapper" aria-hidden="true">🚨</div>
+            <div class="brand-text">
+                <h1>Disaster Response Logistics EOC</h1>
+                <div class="brand-subtitle">Design & Analysis of Algorithms (DAA) Command Center</div>
+            </div>
+        </div>
+
+        <div class="header-controls">
+            <div class="scenario-picker-wrapper">
+                <span class="scenario-picker-label">Active Incident:</span>
+                <select id="scenarioSelector" class="scenario-select" aria-label="Select Disaster Scenario">
+                    <!-- Populated via scenarios.js -->
+                </select>
+            </div>
+
+            <div class="live-telemetry">
+                <span class="live-beacon" aria-hidden="true"></span>
+                <span id="liveClock">NPT --:--:--</span>
+            </div>
+
+            <button id="btnResetScenario" class="btn btn-secondary btn-sm" title="Reset current scenario data to ground truth defaults">
+                ↺ Reset Ground Truth
+            </button>
+        </div>
+    </header>
+
+    <!-- Secondary Incident Telemetry Banner -->
+    <section class="scenario-banner" aria-label="Incident Overview">
+        <div class="banner-left">
+            <span id="scenarioSeverity" class="badge severity-critical">CRITICAL</span>
+            <span id="scenarioTitle" class="banner-title">Kathmandu Earthquake (M7.8)</span>
+            <span id="scenarioLocation" class="banner-location">📍 Kathmandu Valley, Bagmati Province</span>
+        </div>
+        <div class="banner-desc" id="scenarioDesc">
+            Catastrophic seismic event along the Main Himalayan Thrust. Severe structural damage, building collapses, and blocked arterial transit corridors across the urban core.
+        </div>
+        <div class="banner-right">
+            <button id="btnSimulateDisruption" class="btn btn-danger btn-sm">
+                ⚡ Simulate Landslide Hazard
+            </button>
+        </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tab-bar" aria-label="System Navigation">
+        <button class="nav-tab-btn active" data-tab="kpis" id="tabBtnKpis">
+            📊 EOC Executive KPIs
+        </button>
+        <button class="nav-tab-btn" data-tab="map" id="tabBtnMap">
+            🗺️ Interactive Network Map
+        </button>
+        <button class="nav-tab-btn" data-tab="algorithms" id="tabBtnAlgorithms">
+            ⚡ DAA Algorithms Workbench
+        </button>
+        <button class="nav-tab-btn" data-tab="simulator" id="tabBtnSimulator">
+            🚧 Road Disruption Simulator
+        </button>
+        <button class="nav-tab-btn" data-tab="matrix" id="tabBtnMatrix">
+            📦 Relief & Demand Matrix
+        </button>
+        <button class="nav-tab-btn" data-tab="theory" id="tabBtnTheory">
+            📚 DAA Complexity & Theory
+        </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="eoc-main-content">
+
+        <!-- VIEW 1: KPI Dashboard -->
+        <section id="view-kpis" class="tab-view active">
+            <div class="kpi-grid">
+                <div class="card kpi-card kpi-card-rose">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Total Affected Casualties</span>
+                        <span class="kpi-icon">👥</span>
+                    </div>
+                    <div class="kpi-value" id="kpiTotalAffected">0</div>
+                    <div class="kpi-subtext">Registered across evacuation shelters & triage field hospitals</div>
+                </div>
+
+                <div class="card kpi-card kpi-card-cyan">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Active Supply Depots</span>
+                        <span class="kpi-icon">🏭</span>
+                    </div>
+                    <div class="kpi-value" id="kpiActiveDepots">0</div>
+                    <div class="kpi-subtext">Operational staging hubs ready for convoy dispatch</div>
+                </div>
+
+                <div class="card kpi-card kpi-card-amber">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Relief Cargo Inventory</span>
+                        <span class="kpi-icon">📦</span>
+                    </div>
+                    <div class="kpi-value" id="kpiTotalResources">0</div>
+                    <div class="kpi-subtext">Stock units: Food rations, Potable Water, Trauma kits</div>
+                </div>
+
+                <div class="card kpi-card kpi-card-emerald">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Demand Satisfaction</span>
+                        <span class="kpi-icon">🎯</span>
+                    </div>
+                    <div class="kpi-value" id="kpiDemandSatisfaction">0%</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar progress-bar-emerald" id="kpiSatisfactionProgressBar" style="width: 0%;"></div>
+                    </div>
+                    <div class="kpi-subtext">Optimal multi-commodity fulfillment rate via Greedy rationing</div>
+                </div>
+            </div>
+
+            <div class="dashboard-detail-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📈 Critical Resource Rationing by Commodity</h2>
+                        <span id="kpiNetworkStatus" class="status-tag status-success">CONNECTED</span>
+                    </div>
+
+                    <div class="commodity-row">
+                        <div class="commodity-info">
+                            <span>🍞 Emergency Food Rations</span>
+                            <span id="kpiFoodLabel">0 / 0 (0%)</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar progress-bar-amber" id="kpiFoodProgress" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="commodity-row">
+                        <div class="commodity-info">
+                            <span>💧 Potable Water Supply (Liters)</span>
+                            <span id="kpiWaterLabel">0 / 0 (0%)</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar progress-bar-cyan" id="kpiWaterProgress" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="commodity-row">
+                        <div class="commodity-info">
+                            <span>💉 Critical Medical Trauma Supplies</span>
+                            <span id="kpiMedicalLabel">0 / 0 (0%)</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar progress-bar-rose" id="kpiMedicalProgress" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-flex justify-between align-center">
+                        <div class="text-secondary text-sm">
+                            💡 Computed dynamically via <strong>Greedy Priority-First Allocation</strong> algorithm.
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="window.app.switchTab('algorithms')">
+                            Inspect Algorithm Details ➔
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📡 EOC Tactical Comm Feed</h2>
+                        <span class="badge badge-cyan">LIVE LOGS</span>
+                    </div>
+                    <div class="comm-log-box" id="eocCommFeed">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: Interactive Network Map -->
+        <section id="view-map" class="tab-view">
+            <div class="map-view-wrapper">
+                <div class="map-canvas-container" id="networkMapContainer">
+                    <!-- HTML5 Canvas Injected Here -->
+
+                    <!-- Map Controls Toolbar -->
+                    <div class="map-controls-toolbar">
+                        <button class="map-tool-btn" id="btnZoomIn" title="Zoom In">+</button>
+                        <button class="map-tool-btn" id="btnZoomOut" title="Zoom Out">−</button>
+                        <button class="map-tool-btn" id="btnResetView" title="Reset View Bounds">⟲</button>
+                    </div>
+
+                    <!-- Map Legend -->
+                    <div class="map-legend-box">
+                        <div class="legend-title">Topology Legend</div>
+                        <div class="legend-items">
+                            <div class="legend-item">
+                                <span class="legend-dot" style="background: #2563eb;"></span>
+                                <span>Depot (Supply Base)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-dot" style="background: #ef4444;"></span>
+                                <span>Hospital (Trauma Care)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-dot" style="background: #f59e0b;"></span>
+                                <span>Shelter (Evacuation Camp)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-line" style="background: #06b6d4; box-shadow: 0 0 6px #06b6d4;"></span>
+                                <span>Dijkstra Shortest Path</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-line" style="background: #10b981; box-shadow: 0 0 6px #10b981;"></span>
+                                <span>Kruskal / Prim MST Backbone</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-line" style="background: #ef4444; border: 1px dashed #ffffff;"></span>
+                                <span>Blocked Corridor (Hazard)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Sidebar Controls -->
+                <div class="map-sidebar">
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h3 class="card-title">🗺️ Map Visual Overlays</h3>
+                        </div>
+                        <div class="form-group">
+                            <label class="d-flex align-center gap-2" style="cursor: pointer;">
+                                <input type="checkbox" id="toggleDijkstraOverlay" checked>
+                                <span>Highlight Dijkstra Shortest Path</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="d-flex align-center gap-2" style="cursor: pointer;">
+                                <input type="checkbox" id="toggleMstOverlay" checked>
+                                <span>Highlight MST Reconnection Backbone</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="d-flex align-center gap-2" style="cursor: pointer;">
+                                <input type="checkbox" id="toggleDistanceLabels" checked>
+                                <span>Show Distance Tags & Hazard Warnings</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">💡 Map Instructions</h3>
+                        </div>
+                        <ul class="text-secondary text-sm" style="padding-left: 18px; line-height: 1.6;">
+                            <li><strong>Pan</strong>: Click and drag anywhere on the canvas.</li>
+                            <li><strong>Zoom</strong>: Use your mouse wheel or +/- toolbar buttons.</li>
+                            <li><strong>Toggle Road Hazard</strong>: Click on any corridor line to toggle between <strong>Open</strong> and <strong>Blocked</strong> status.</li>
+                            <li><strong>Inspect Hub</strong>: Click on any node circle to set it as a Dijkstra route endpoint or view local capacity.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: DAA Algorithms Workbench -->
+        <section id="view-algorithms" class="tab-view">
+            <div class="algorithms-grid">
+
+                <!-- 1. DIJKSTRA'S ALGORITHM -->
+                <div class="card algo-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span class="text-accent">1.</span> Dijkstra's Shortest Path
+                        </h2>
+                        <span id="dijkstraStatus" class="badge badge-cyan">OPTIMAL PATH FOUND</span>
+                    </div>
+
+                    <p class="text-secondary text-sm mb-3">
+                        Calculates the fastest or shortest safe route avoiding blocked transit corridors using a Min-Priority Queue. <code>O((V + E) log V)</code>.
+                    </p>
+
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label class="form-label" for="dijkstraSource">Source Hub</label>
+                            <select id="dijkstraSource" class="form-control">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dijkstraTarget">Destination Hub</label>
+                            <select id="dijkstraTarget" class="form-control">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="dijkstraWeightAttr">Optimization Criterion</label>
+                        <select id="dijkstraWeightAttr" class="form-control">
+                            <option value="distance" selected>Minimum Distance (km)</option>
+                            <option value="travelTime">Minimum Travel Time (min)</option>
+                        </select>
+                    </div>
+
+                    <button id="btnRunDijkstra" class="btn btn-primary mb-3">
+                        ⚡ Compute Shortest Route
+                    </button>
+
+                    <div class="d-flex justify-between align-center mb-2">
+                        <span class="text-secondary">Total Route Distance:</span>
+                        <strong class="text-accent" style="font-size: 1.2rem;" id="dijkstraDistance">0.0 km</strong>
+                    </div>
+
+                    <div class="d-flex justify-between align-center mb-2">
+                        <span class="text-secondary">Estimated Convoy Travel Time:</span>
+                        <strong class="text-emerald" style="font-size: 1.1rem;" id="dijkstraTime">0 min</strong>
+                    </div>
+
+                    <div class="form-label mt-2">Optimal Corridor Sequence:</div>
+                    <div class="path-display-box" id="dijkstraPathDisplay">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <details class="mt-2">
+                        <summary class="text-secondary text-sm" style="cursor: pointer; font-weight: 600;">
+                            View Step-by-Step Priority Queue Relaxation Log
+                        </summary>
+                        <ul class="trace-log-box mt-2" id="dijkstraStepsTrace"></ul>
+                    </details>
+                </div>
+
+                <!-- 2. MINIMUM SPANNING TREE (KRUSKAL & PRIM) -->
+                <div class="card algo-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span class="text-emerald">2.</span> Minimum Spanning Tree (MST)
+                        </h2>
+                        <span class="badge badge-emerald">KRUSKAL & PRIM</span>
+                    </div>
+
+                    <p class="text-secondary text-sm mb-3">
+                        Identifies the minimum-cost road reconnection backbone linking all hubs without cycles. Kruskal: <code>O(E log E)</code> | Prim: <code>O(E log V)</code>.
+                    </p>
+
+                    <div class="input-row mb-3">
+                        <div class="card" style="background: rgba(0,0,0,0.25); padding: 12px;">
+                            <div class="text-secondary text-sm">Kruskal Total Distance:</div>
+                            <div class="text-emerald" style="font-size: 1.3rem; font-weight: 800;" id="kruskalTotalWeight">0 km</div>
+                            <div class="text-muted text-sm"><span id="kruskalEdgeCount">0</span> corridors selected via DSU</div>
+                        </div>
+
+                        <div class="card" style="background: rgba(0,0,0,0.25); padding: 12px;">
+                            <div class="text-secondary text-sm">Prim Total Distance:</div>
+                            <div class="text-cyan" style="font-size: 1.3rem; font-weight: 800;" id="primTotalWeight">0 km</div>
+                            <div class="text-muted text-sm">Depot-Centric cut-edge expansion</div>
+                        </div>
+                    </div>
+
+                    <div class="form-label">Critical Reconnection Corridors:</div>
+                    <div class="table-responsive" style="max-height: 200px;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Corridor</th>
+                                    <th>Distance</th>
+                                    <th>Est. Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mstEdgesTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. 0/1 KNAPSACK DYNAMIC PROGRAMMING -->
+                <div class="card algo-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span class="text-amber">3.</span> 0/1 Knapsack Vehicle Cargo DP
+                        </h2>
+                        <span class="badge badge-amber">DYNAMIC PROGRAMMING</span>
+                    </div>
+
+                    <p class="text-secondary text-sm mb-3">
+                        Maximizes life-saving utility of relief supplies packed into weight-bounded transport helicopters and trucks. <code>O(N · W)</code>.
+                    </p>
+
+                    <div class="form-group">
+                        <div class="d-flex justify-between align-center mb-1">
+                            <label class="form-label" for="knapsackCapacitySlider">Vehicle Gross Payload Capacity (kg / units):</label>
+                            <strong class="text-amber" id="knapsackCapacityDisplay">100 units</strong>
+                        </div>
+                        <input type="range" id="knapsackCapacitySlider" min="20" max="300" step="10" value="100" class="form-control" style="cursor: pointer;">
+                    </div>
+
+                    <div class="input-row mb-3">
+                        <div class="form-group">
+                            <input type="number" id="knapsackCapacityInput" min="10" max="1000" value="100" class="form-control" placeholder="Exact payload capacity">
+                        </div>
+                        <button id="btnRunKnapsack" class="btn btn-emerald">
+                            ⚙️ Optimize Cargo Pack
+                        </button>
+                    </div>
+
+                    <div class="input-row mb-3">
+                        <div class="card" style="background: rgba(0,0,0,0.25); padding: 12px;">
+                            <div class="text-secondary text-sm">Max Survival Utility:</div>
+                            <div class="text-amber" style="font-size: 1.3rem; font-weight: 800;" id="knapsackMaxValue">0</div>
+                        </div>
+                        <div class="card" style="background: rgba(0,0,0,0.25); padding: 12px;">
+                            <div class="text-secondary text-sm">Payload Weight Consumed:</div>
+                            <div class="text-cyan" style="font-size: 1.3rem; font-weight: 800;" id="knapsackWeightConsumed">0 / 100</div>
+                            <div class="text-muted text-sm">Efficiency: <span id="knapsackEfficiency">0%</span></div>
+                        </div>
+                    </div>
+
+                    <div class="form-label">Optimal Manifest Packages Selected:</div>
+                    <div class="payload-grid" id="knapsackSelectedItemsList">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <details class="mt-2">
+                        <summary class="text-secondary text-sm" style="cursor: pointer; font-weight: 600;">
+                            View 2D Dynamic Programming Table Sample Grid [dp[N+1][W+1]]
+                        </summary>
+                        <div class="table-responsive mt-2">
+                            <table class="table" id="knapsackDpPreview">
+                                <!-- Populated dynamically -->
+                            </table>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- 4. GREEDY RESOURCE RATIONING -->
+                <div class="card algo-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span class="text-rose">4.</span> Greedy Multi-Commodity Rationing
+                        </h2>
+                        <span class="badge badge-rose">GREEDY PARADIGM</span>
+                    </div>
+
+                    <p class="text-secondary text-sm mb-3">
+                        Rations scarce regional inventories by strictly sorting demands by casualty triage urgency (Priority 1 = Critical). <code>O(D log D + D · R)</code>.
+                    </p>
+
+                    <div class="table-responsive" style="max-height: 320px;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Shelter</th>
+                                    <th>Triage</th>
+                                    <th>Food (Alloc/Req)</th>
+                                    <th>Water (Alloc/Req)</th>
+                                    <th>Medical (Alloc/Req)</th>
+                                    <th>Fulfillment</th>
+                                </tr>
+                            </thead>
+                            <tbody id="greedyAllocationsTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 5. RED-BLACK TREE TRIAGE QUEUE -->
+                <div class="card algo-card" style="grid-column: 1 / -1;">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span class="text-purple">5.</span> Self-Balancing Red-Black Tree (Triage Priority Queue)
+                        </h2>
+                        <span class="badge badge-purple">SELF-BALANCING BST</span>
+                    </div>
+
+                    <p class="text-secondary text-sm mb-3">
+                        Maintains dynamic shelter requisitions in a balanced binary search tree, guaranteeing <code>O(log N)</code> insertion, search, and priority triage extraction even as emergency demands stream in concurrently.
+                    </p>
+
+                    <div class="dashboard-detail-grid">
+                        <div>
+                            <div class="form-label">In-Order Descending Triage Queue (Extract Priority):</div>
+                            <div class="triage-queue-list" id="rbtSortedDemandsList">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="form-label">Interactive Red-Black Tree Structure:</div>
+                            <div class="rbt-visual-container" id="rbtTreeVisual">
+                                <!-- Injected dynamically -->
+                            </div>
+                            <div class="text-muted text-sm mt-2 text-center">
+                                Red nodes rotate and recolor automatically during insertion to maintain height balance $\leq 2\log_2(N+1)$.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- VIEW 4: Road Disruption Simulator -->
+        <section id="view-simulator" class="tab-view">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title">🚧 Real-time Road Disruption & Rerouting Simulator</h2>
+                    <div class="d-flex gap-2">
+                        <button id="btnRestoreAllCorridors" class="btn btn-emerald btn-sm">
+                            ✓ Restore & Reopen All Corridors
+                        </button>
+                    </div>
+                </div>
+                <p class="text-secondary mb-3">
+                    Toggle landslides, bridge failures, and roadblocks across transit corridors. When any corridor status changes, Dijkstra Shortest Paths and Kruskal/Prim MSTs automatically recompute in real time!
+                </p>
+
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Corridor Segment</th>
+                                <th>Distance</th>
+                                <th>Travel Time</th>
+                                <th>Disruption Vulnerability</th>
+                                <th>Live Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="simulatorRoadsTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 5: Supply & Demand Matrix -->
+        <section id="view-matrix" class="tab-view">
+            <div class="dashboard-detail-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🏭 Depot Inventory Batches</h2>
+                        <button id="btnOpenAddResourceModal" class="btn btn-primary btn-sm">+ Add Relief Stock</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Resource ID</th>
+                                    <th>Location</th>
+                                    <th>Commodity</th>
+                                    <th>Quantity</th>
+                                    <th>Weight (w)</th>
+                                    <th>Utility (v)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryDepotsTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">⛺ Shelter Requisitions & Casualties</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Demand ID</th>
+                                    <th>Shelter</th>
+                                    <th>Pop.</th>
+                                    <th>Food</th>
+                                    <th>Water</th>
+                                    <th>Med</th>
+                                    <th>Triage</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryDemandsTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 6: DAA Complexity & Theory -->
+        <section id="view-theory" class="tab-view">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title">📚 Design & Analysis of Algorithms: Theoretical Complexity Matrix</h2>
+                </div>
+                <p class="text-secondary mb-3">
+                    Comparative analysis of the algorithmic paradigms implemented in the Disaster Response Logistics Optimization Platform:
+                </p>
+
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Algorithm</th>
+                                <th>Algorithmic Paradigm</th>
+                                <th>Time Complexity</th>
+                                <th>Space Complexity</th>
+                                <th>Emergency Logistics Application</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Dijkstra's Algorithm</strong></td>
+                                <td><span class="badge badge-cyan">Graph Theory / Greedy</span></td>
+                                <td><code>O((V + E) log V)</code></td>
+                                <td><code>O(V + E)</code></td>
+                                <td>Emergency dispatch & casualty evacuation routing around blocked roads and landslides.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Kruskal's Algorithm</strong></td>
+                                <td><span class="badge badge-emerald">Greedy / DSU</span></td>
+                                <td><code>O(E log E)</code></td>
+                                <td><code>O(V + E)</code></td>
+                                <td>Post-earthquake road reconnection backbone; reconnecting isolated clusters at minimum repair cost.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Prim's Algorithm</strong></td>
+                                <td><span class="badge badge-emerald">Greedy / Cut-Property</span></td>
+                                <td><code>O(E log V)</code></td>
+                                <td><code>O(V + E)</code></td>
+                                <td>Depot-centric grid expansion outwards from central logistics hubs with continuous chain of custody.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>0/1 Knapsack</strong></td>
+                                <td><span class="badge badge-amber">Dynamic Programming</span></td>
+                                <td><code>O(N · W)</code></td>
+                                <td><code>O(N · W)</code></td>
+                                <td>Optimizing air and truck cargo manifests to maximize survival utility within strict payload limits.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Greedy Resource Allocation</strong></td>
+                                <td><span class="badge badge-rose">Greedy Heuristic</span></td>
+                                <td><code>O(D log D + D · R)</code></td>
+                                <td><code>O(R)</code></td>
+                                <td>Multi-commodity rationing (food, potable water, medical trauma kits) based on casualty triage ranks.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Red-Black Tree</strong></td>
+                                <td><span class="badge badge-purple">Self-Balancing BST</span></td>
+                                <td><code>O(log N)</code> per operation</td>
+                                <td><code>O(N)</code></td>
+                                <td>Real-time priority indexing of dynamic shelter requests with guaranteed logarithmic balance.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Node Details Modal -->
+    <div class="modal-overlay" id="nodeDetailsModal" role="dialog" aria-modal="true" aria-labelledby="modalNodeName">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalNodeName">Node Details</h3>
+                <button class="modal-close" aria-label="Close modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="commodity-row">
+                    <span class="text-secondary">Node ID:</span>
+                    <code id="modalNodeId">--</code>
+                </div>
+                <div class="commodity-row">
+                    <span class="text-secondary">Hub Type:</span>
+                    <strong id="modalNodeType">--</strong>
+                </div>
+                <div class="commodity-row">
+                    <span class="text-secondary">Coordinates:</span>
+                    <span id="modalNodeCoords">--</span>
+                </div>
+                <div class="commodity-row">
+                    <span class="text-secondary">Capacity:</span>
+                    <strong id="modalNodeCapacity">--</strong> persons
+                </div>
+                <div class="commodity-row mb-3">
+                    <span class="text-secondary">Local Supplies:</span>
+                    <strong class="text-accent" id="modalNodeResources">--</strong> units
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button class="btn btn-primary" id="modalBtnSetSource" style="flex: 1;">
+                        Set as Dijkstra Start 🚩
+                    </button>
+                    <button class="btn btn-emerald" id="modalBtnSetTarget" style="flex: 1;">
+                        Set as Destination 🏁
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Resource Modal -->
+    <div class="modal-overlay" id="addResourceModal" role="dialog" aria-modal="true" aria-labelledby="addResourceTitle">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="addResourceTitle">Add Relief Supply Batch</h3>
+                <button class="modal-close" aria-label="Close modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="newResType">Commodity Type</label>
+                    <select id="newResType" class="form-control">
+                        <option value="Food">Food Rations</option>
+                        <option value="Water">Potable Water</option>
+                        <option value="Medical">Medical Kits</option>
+                        <option value="Fuel">Emergency Fuel</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="newResQty">Quantity (Units)</label>
+                    <input type="number" id="newResQty" value="150" min="10" max="10000" class="form-control">
+                </div>
+                <div class="input-row">
+                    <div class="form-group">
+                        <label class="form-label" for="newResWeight">Unit Weight (kg)</label>
+                        <input type="number" id="newResWeight" value="12" min="1" max="100" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="newResValue">Survival Utility Value</label>
+                        <input type="number" id="newResValue" value="85" min="1" max="500" class="form-control">
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100 mt-3" id="btnSubmitAddResource" style="width: 100%;">
+                    ✓ Add to Active Depot Inventory
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Alerts Container -->
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <!-- Application Scripts -->
+    <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
